@@ -1,0 +1,12 @@
+{
+	"authors": [
+		"mxsaslalrarra"
+	],
+	"copyright": "Copyright © 2019, M. Rawcliffe",
+	"dependencies": {
+		"gtk-d": "~>3.9.0"
+	},
+	"description": "matrix client",
+	"license": "GPLv3",
+	"name": "shearwater"
+}
