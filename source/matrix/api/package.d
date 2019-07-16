@@ -65,7 +65,6 @@ void executeRequest(alias R, Args...)(string baseUrl, Args args)
     response.status = Status(false, e.toString);
   }
 
-  //return response;
   ownerTid.send(response);
 }
 
