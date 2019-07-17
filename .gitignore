@@ -13,3 +13,4 @@ shearwater-test-*
 *.o
 *.obj
 *.lst
+env.sh
