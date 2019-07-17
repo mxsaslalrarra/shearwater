@@ -8,7 +8,7 @@ enum Kind {
 alias Request(alias T)  = T!(Kind.Request);
 alias Response(alias T) = T!(Kind.Response);
 
-alias execute(alias T) = executeRequest!(Request!T, Request!T.Params);
+alias execute(alias T) = executeRequest!(Request!T);
 
 enum Method {
   GET,
@@ -28,7 +28,7 @@ mixin template RequestParameters(string Endpoint, Method HttpMethod) {
 
 immutable string[string] NULL_PARAMS;
 
-void executeRequest(alias R, Args...)(string baseUrl, Args args)
+void executeRequest(alias R)(string baseUrl, Request!R request)
 {
   import std.concurrency : ownerTid, send;
   import std.format : format;
@@ -39,7 +39,6 @@ void executeRequest(alias R, Args...)(string baseUrl, Args args)
 
   static assert (__traits(hasMember, Response!R, "parse"));
 
-  auto request = T(args);
   string url = buildUrl(baseUrl, request.endpoint);
 
   static if (T.method == Method.GET) {

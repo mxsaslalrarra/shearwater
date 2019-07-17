@@ -1,7 +1,6 @@
 module matrix.api.login;
 
 import std.json : JSONValue, parseJSON;
-import std.meta : AliasSeq;
 
 import matrix.api;
 import matrix.api.model : UserIdentifier;
@@ -12,8 +11,6 @@ struct Login(Kind K)
   UserIdentifier!UserIdentifierType user;
   string password;
   string type = "m.login.password";
-
-  alias Params = AliasSeq!(string, string);
 
   this (string username, string password) {
     this.user = UserIdentifier!UserIdentifierType(username);

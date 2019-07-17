@@ -1,12 +1,33 @@
 import std.concurrency;
 import std.stdio : writeln;
 
+import matrix.api;
+import matrix.api.login;
+
+void idle(string url)
+{
+  import core.thread : Thread;
+  import core.time : dur;
+
+  bool running = true;
+
+  while (running) {
+    receiveTimeout(dur!"msecs"(0),
+      (Request!Login request) {
+        execute!Login(url, request);
+      },
+      (bool cont) {
+        running = cont;
+      },
+    );
+
+    Thread.sleep(dur!"seconds"(0));
+  }
+}
+
 void main()
 {
   import std.process : environment;
-
-  import matrix.api;
-  import matrix.api.login;
 
   string serv = environment.get("SW_SERV");
   string user = environment.get("SW_USER");
@@ -17,15 +38,16 @@ void main()
     return;
   }
 
-  // Might be ok to spawn a thread for these events so long as there is
-  // a long running one for sync
-  // ^ Perhaps use a template flag + static if for whether to use a while
-  // loop in executeRequest
-  auto tid = spawn(&execute!Login, serv, user, pass);
+  auto tid = spawn(&idle, serv);
+
+  auto req = Request!Login(user, pass);
+  tid.send(req);
 
   receive(
     (Response!Login res) {
       writeln(res.status);
     }
   );
+
+  tid.send(false);
 }
