@@ -21,6 +21,7 @@ public:
     super("");
     this.setLabel(null);
 
+    auto topVbox = new Box(Orientation.VERTICAL, 0);
     auto hbox = new Box(Orientation.HORIZONTAL, 0);
     auto vbox = new Box(Orientation.VERTICAL, 0);
 
@@ -60,7 +61,9 @@ public:
     vbox.packStart(mError_L, false, false, 0);
 
     hbox.setCenterWidget(vbox);
-    this.add(hbox);
+    topVbox.setCenterWidget(hbox);
+
+    this.add(topVbox);
   }
 
   void setupConnections(void delegate(Button) fn)
