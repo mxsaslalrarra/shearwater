@@ -19,6 +19,7 @@ import matrix.api.login;
 import matrix.connection : connection;
 
 import ui.idle : onIdle;
+import ui.chat : ChatFrame;
 import ui.login_frame : LoginFrame;
 
 class MainWindow : ApplicationWindow
@@ -47,19 +48,30 @@ public:
       mLoginFrame.loginFailed("Failed to log in");
       stopConnection();
     } else {
-      import std.stdio : writeln;
-      writeln("Logged in!");
+      mLoginFrame.hide();
+      this.remove(mLoginFrame);
+      mLoginFrame = null;
+
+      this.initChatUI();
     }
   }
 
 private:
   LoginFrame mLoginFrame;
+  ChatFrame mChatFrame;
 
   void initLoginUI()
   {
     mLoginFrame = new LoginFrame();
     mLoginFrame.setupConnections(&onLogin);
     this.add(mLoginFrame);
+  }
+
+  void initChatUI()
+  {
+    mChatFrame = new ChatFrame();
+    this.add(mChatFrame);
+    this.showAll();
   }
 
   void onLogin(Button btn)
