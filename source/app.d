@@ -1,53 +1,18 @@
 import std.concurrency;
 import std.stdio : writeln;
 
-import matrix.api;
-import matrix.api.login;
+import gtk.Application : Application;
+import gio.Application: GioApplication = Application;
+import gtk.ApplicationWindow: ApplicationWindow;
+import gtkc.giotypes: GApplicationFlags;
 
-void idle(string url)
+import ui.main_window;
+
+int main(string[] args)
 {
-  import core.thread : Thread;
-  import core.time : dur;
-
-  bool running = true;
-
-  while (running) {
-    receiveTimeout(dur!"msecs"(0),
-      (Request!Login request) {
-        execute!Login(url, request);
-      },
-      (bool cont) {
-        running = cont;
-      },
-    );
-
-    Thread.sleep(dur!"seconds"(0));
-  }
-}
-
-void main()
-{
-  import std.process : environment;
-
-  string serv = environment.get("SW_SERV");
-  string user = environment.get("SW_USER");
-  string pass = environment.get("SW_PASS");
-
-  if (serv.length == 0 || user.length == 0 || pass.length == 0) {
-    writeln("Missing dev environment vars");
-    return;
-  }
-
-  auto tid = spawn(&idle, serv);
-
-  auto req = Request!Login(user, pass);
-  tid.send(req);
-
-  receive(
-    (Response!Login res) {
-      writeln(res.status);
-    }
-  );
-
-  tid.send(false);
+    auto app = new Application("re.b5.shearwater", GApplicationFlags.FLAGS_NONE);
+    app.addOnActivate(delegate void(GioApplication _) {
+        mainWindow = new MainWindow(app);
+    });
+    return app.run(args);
 }
