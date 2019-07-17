@@ -16,45 +16,8 @@ import gtk.Widget;
 
 import matrix.api;
 import matrix.api.login;
-
-void connection(string url)
-{
-  bool running = true;
-
-  while (running) {
-    receiveTimeout(dur!"msecs"(0),
-      (Request!Login request) {
-        execute!Login(url, request);
-      },
-      (bool cont) {
-        ownerTid.send(0); // force kill onIdle in main thread
-        running = cont;
-      },
-    );
-
-    Thread.sleep(dur!"seconds"(0));
-  }
-}
-
-extern(C) static int onIdle(void* data) nothrow
-{
-  int alive = 1;
-
-  try {
-    receiveTimeout(dur!"msecs"(0),
-      (Response!Login response) {
-        import std.stdio : writeln;
-        // update ui here
-        writeln(response.status);
-      },
-      (int kill) {
-        alive = kill;
-      }
-    );
-  } catch (Throwable t) {}
-
-  return alive;
-}
+import matrix.connection : connection;
+import ui.idle : onIdle;
 
 class MainWindow : ApplicationWindow
 {
