@@ -17,7 +17,9 @@ import gtk.Widget;
 import matrix.api;
 import matrix.api.login;
 import matrix.connection : connection;
+
 import ui.idle : onIdle;
+import ui.login_frame : LoginFrame;
 
 class MainWindow : ApplicationWindow
 {
@@ -25,7 +27,8 @@ private:
   Tid mConnectionTid;
 
 public:
-  this(Application app) {
+  this(Application app)
+  {
     super(app);
 
     this.addOnDelete(&onCloseWindow);
@@ -38,25 +41,45 @@ public:
     this.showAll();
   }
 
-private:
-  void initLoginUI() {
-    auto btn = new Button("Login");
-    btn.addOnClicked(&onLogin);
-    this.add(btn);
+  void onLoginComplete(Response!Login response)
+  {
+    if (!response.status.ok) {
+      mLoginFrame.loginFailed("Failed to log in");
+      stopConnection();
+    } else {
+      import std.stdio : writeln;
+      writeln("Logged in!");
+    }
   }
 
-  void onLogin(Button btn) {
-    import std.process : env = environment;
-    mConnectionTid = spawnLinked(&connection, env.get("SW_SERV"));
+private:
+  LoginFrame mLoginFrame;
+
+  void initLoginUI()
+  {
+    mLoginFrame = new LoginFrame();
+    mLoginFrame.setupConnections(&onLogin);
+    this.add(mLoginFrame);
+  }
+
+  void onLogin(Button btn)
+  {
+    mConnectionTid = spawnLinked(&connection, mLoginFrame.server);
     threadsAddIdle(&onIdle, null);
 
-    auto req = Request!Login(env.get("SW_USER"), env.get("SW_PASS"));
+    auto req = Request!Login(mLoginFrame.username, mLoginFrame.password);
     mConnectionTid.send(req);
   }
 
-  bool onCloseWindow(Event event, Widget widget) {
-    mConnectionTid.send(false); // stop connection worker
+  bool onCloseWindow(Event event, Widget widget)
+  {
+    stopConnection();
     return false;
+  }
+
+  void stopConnection()
+  {
+    mConnectionTid.send(false); // stop connection worker
   }
 }
 
