@@ -12,6 +12,8 @@ struct Login(Kind K)
   string password;
   string type = "m.login.password";
 
+  alias ResponseOf = Response!Login;
+
   this (string username, string password) {
     this.user = UserIdentifier!UserIdentifierType(username);
     this.password = password;

@@ -79,7 +79,7 @@ private:
     mConnectionTid = spawnLinked(&connection, mLoginFrame.server);
     threadsAddIdle(&onIdle, null);
 
-    auto req = Request!Login(mLoginFrame.username, mLoginFrame.password);
+    Action req = Request!Login(mLoginFrame.username, mLoginFrame.password);
     mConnectionTid.send(req);
   }
 

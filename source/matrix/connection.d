@@ -4,16 +4,13 @@ void connection(string url)
 {
   import std.concurrency : ownerTid, receiveTimeout, send;
   import core.thread : Thread, dur;
-  import matrix : execute, Request;
-  import matrix.api.login;
+  import matrix : Action, execute;
 
   bool running = true;
 
   while (running) {
     receiveTimeout(dur!"msecs"(0),
-      (Request!Login request) {
-        execute!Login(url, request);
-      },
+      (Action a) => a.execute(url),
       (bool cont) {
         ownerTid.send(0); // force kill onIdle in main thread
         running = cont;
