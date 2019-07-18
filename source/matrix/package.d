@@ -35,6 +35,12 @@ mixin template RequestParameters(string Endpoint, Method HttpMethod) {
   mixin(`alias ResponseOf = ` ~ Endpoint.capitalize ~ `!(Kind.Response);`);
 }
 
+mixin template ResponseParameters(string Type)
+{
+  enum string responseType = Type;
+  Status status;
+}
+
 void execute(Action action, string baseUrl)
 {
   import std.concurrency : ownerTid, send;
@@ -66,8 +72,8 @@ void execute(Action action, string baseUrl)
       U response;
 
       try {
-        JSONValue result = mixin(http ~ `.parseJSON()`);
-        response.parse(result);
+        JSONValue data = mixin(http ~ `.parseJSON()`);
+        response.parse(data);
         response.status = Status(true, "");
       } catch (HTTPStatusException e) {
         response.status = Status(false, "HTTP %d: %s".format(e.status, e.msg));
@@ -77,7 +83,10 @@ void execute(Action action, string baseUrl)
         response.status = Status(false, e.toString);
       }
 
-      ownerTid.send(response);
+      // cast response to reaction
+      Reaction result = response;
+
+      ownerTid.send(result);
     }
   );
 }
@@ -96,7 +105,24 @@ template MakeRequest(alias T)
   mixin(`alias MakeRequest = ` ~ T ~ `!(Kind.Request);`);
 }
 
+template IsResponse(alias T)
+{
+  static if (__traits(compiles, mixin(T ~ `!(Kind.Response)`))) {
+    const IsResponse = __traits(hasMember, mixin(T ~ `!(Kind.Response)`), "parse");
+  } else {
+    const IsResponse = false;
+  }
+}
+
+template MakeResponse(alias T)
+{
+  mixin(`alias MakeResponse = ` ~ T ~ `!(Kind.Response);`);
+}
+
 // NOTE add new modules to this list when adding endpoints to api
 
-alias Symbols = Filter!(IsRequest, __traits(allMembers, matrix.api.login));
-alias Action = SumType!(staticMap!(MakeRequest, Symbols));
+alias ReqSymbols = Filter!(IsRequest, __traits(allMembers, matrix.api.login));
+alias Action = SumType!(staticMap!(MakeRequest, ReqSymbols));
+
+alias ResSymbols = Filter!(IsResponse, __traits(allMembers, matrix.api.login));
+alias Reaction = SumType!(staticMap!(MakeResponse, ResSymbols));

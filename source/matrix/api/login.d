@@ -5,6 +5,8 @@ import std.json : JSONValue, parseJSON;
 import matrix;
 import matrix.model : UserIdentifier;
 
+immutable string EndpointType = "login";
+
 struct Login(Kind K)
   if (K == Kind.Request)
 {
@@ -24,7 +26,7 @@ struct Login(Kind K)
     return data.toString;
   }
 
-  mixin RequestParameters!("login", Method.POST);
+  mixin RequestParameters!(EndpointType, Method.POST);
 
 private:
   enum string UserIdentifierType = "m.id.user";
@@ -35,10 +37,11 @@ struct Login(Kind K)
 {
   string accessToken;
   string userId;
-  Status status;
 
   void parse(JSONValue data) {
     accessToken = data["access_token"].str;
     userId = data["user_id"].str;
   }
+
+  mixin ResponseParameters!(EndpointType);
 }
