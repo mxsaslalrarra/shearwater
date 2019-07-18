@@ -85,7 +85,9 @@ private:
 
   bool onCloseWindow(Event event, Widget widget)
   {
-    stopConnection();
+    if (mConnectionTid != Tid.init) {
+      stopConnection();
+    }
     return false;
   }
 
