@@ -4,13 +4,13 @@ void connection(string url)
 {
   import std.concurrency : ownerTid, receiveTimeout, send;
   import core.thread : Thread, dur;
-  import matrix : Action, execute;
+  import matrix : Action, execute, State;
 
   bool running = true;
 
   while (running) {
     receiveTimeout(dur!"msecs"(0),
-      (Action a) => a.execute(url),
+      (Action a, State state) => a.execute(state, url),
       (bool cont) {
         ownerTid.send(0); // force kill onIdle in main thread
         running = cont;

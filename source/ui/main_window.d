@@ -16,6 +16,7 @@ import gtk.Widget;
 
 import matrix;
 import matrix.api.login;
+import matrix.api.sync;
 import matrix.connection : connection;
 
 import ui.idle : onIdle;
@@ -26,6 +27,7 @@ class MainWindow : ApplicationWindow
 {
 private:
   Tid mConnectionTid;
+  State mState;
 
 public:
   this(Application app)
@@ -48,6 +50,9 @@ public:
       mLoginFrame.loginFailed("Failed to log in");
       stopConnection();
     } else {
+      // start a sync
+
+      // remove login form and show main ui
       mLoginFrame.hide();
       this.remove(mLoginFrame);
       mLoginFrame = null;
@@ -56,9 +61,18 @@ public:
     }
   }
 
+  void onSyncComplete(Response!Sync response)
+  {
+  }
+
 private:
   LoginFrame mLoginFrame;
   ChatFrame mChatFrame;
+
+  void process(Action action)
+  {
+    mConnectionTid.send(action, mState);
+  }
 
   void initLoginUI()
   {
@@ -80,7 +94,7 @@ private:
     threadsAddIdle(&onIdle, null);
 
     Action req = Request!Login(mLoginFrame.username, mLoginFrame.password);
-    mConnectionTid.send(req);
+    this.process(req);
   }
 
   bool onCloseWindow(Event event, Widget widget)

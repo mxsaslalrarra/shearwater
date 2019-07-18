@@ -21,17 +21,23 @@ enum Method {
   POST,
 }
 
+struct State
+{
+  string accessToken;
+}
+
 struct Status
 {
   bool ok;
   string message;
 }
 
-mixin template RequestParameters(string Endpoint, Method HttpMethod) {
+mixin template RequestParameters(string Endpoint, Method HttpMethod, bool Auth = true) {
   import std.string : capitalize;
 
   enum string endpoint = Endpoint;
   enum Method method = HttpMethod;
+  enum bool requiresAuth = Auth;
   mixin(`alias ResponseOf = ` ~ Endpoint.capitalize ~ `!(Kind.Response);`);
 }
 
@@ -41,7 +47,7 @@ mixin template ResponseParameters(string Type)
   Status status;
 }
 
-void execute(Action action, string baseUrl)
+void execute(Action action, State state, string baseUrl)
 {
   import std.concurrency : ownerTid, send;
   import std.format : format;
@@ -54,18 +60,27 @@ void execute(Action action, string baseUrl)
     (request) {
       static assert (__traits(hasMember, request, "ResponseOf"));
       alias T = typeof(request);
-      static assert (__traits(hasMember, T, "data"));
+      //static assert (__traits(hasMember, T, "data") || __traits(hasMember, T, "parse"));
       alias U = request.ResponseOf;
-      static assert (__traits(hasMember, U, "parse"));
+      //static assert (__traits(hasMember, U, "parse"));
 
-      string url = buildUrl(baseUrl, request.endpoint);
+      static if (T.requiresAuth) {
+        string accessToken = state.accessToken;
+      } else {
+        string accessToken = "";
+      }
+
+      static if (__traits(hasMember, T, "params")) {
+        string url = buildUrl(baseUrl, request.endpoint, accessToken, request.params);
+      } else {
+        string url = buildUrl(baseUrl, request.endpoint, accessToken);
+      }
 
       static if (T.method == Method.GET) {
         import std.net.curl : get;
         enum http = `get(url)`;
       } else {
         import std.net.curl : post;
-        static assert (__traits(hasMember, T, "data"));
         enum http = `post(url, request.data)`;
       }
 
@@ -94,7 +109,9 @@ void execute(Action action, string baseUrl)
 template IsRequest(alias T)
 {
   static if (__traits(compiles, mixin(T ~ `!(Kind.Request)`))) {
-    const IsRequest = __traits(hasMember, mixin(T ~ `!(Kind.Request)`), "data");
+    const IsRequest =
+      __traits(hasMember, mixin(T ~ `!(Kind.Request)`), "data") ||
+      __traits(hasMember, mixin(T ~ `!(Kind.Request)`), "params");
   } else {
     const IsRequest = false;
   }
