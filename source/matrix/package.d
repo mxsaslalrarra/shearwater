@@ -93,5 +93,7 @@ template MakeRequest(alias T)
   mixin(`alias MakeRequest = ` ~ T ~ `!(Kind.Request);`);
 }
 
+// NOTE add new modules to this list when adding endpoints to api
+
 alias Symbols = Filter!(IsRequest, __traits(allMembers, matrix.api.login));
 alias Action = SumType!(staticMap!(MakeRequest, Symbols));
