@@ -16,8 +16,6 @@ private:
 public:
   this()
   {
-    import std.process : env = environment;
-
     super("");
     this.setLabel(null);
 
@@ -29,7 +27,7 @@ public:
     auto lblUsername = new Label("Username");
     userBox.packStart(lblUsername, true, true, 10);
     mUsername_E = new Entry();
-    mUsername_E.setText(env.get("SW_USER"));
+    mUsername_E.setText(getDefaultText("SW_USER"));
     userBox.packStart(mUsername_E, false, false, 0);
 
     vbox.packStart(userBox, false, false, 0);
@@ -39,7 +37,7 @@ public:
     passwordBox.packStart(lblPassword, true, true, 10);
     mPassword_E = new Entry();
     mPassword_E.setVisibility(false);
-    mPassword_E.setText(env.get("SW_PASS"));
+    mPassword_E.setText(getDefaultText("SW_PASS"));
     passwordBox.packStart(mPassword_E, false, false, 0);
 
     vbox.packStart(passwordBox, false, false, 0);
@@ -48,7 +46,7 @@ public:
     auto lblServer = new Label("Server");
     serverBox.packStart(lblServer, true, true, 10);
     mServer_E = new Entry();
-    mServer_E.setText(env.get("SW_SERV"));
+    mServer_E.setText(getDefaultText("SW_SERV"));
     serverBox.packStart(mServer_E, false, false, 0);
 
     vbox.packStart(serverBox, false, false, 0);
@@ -91,5 +89,18 @@ public:
   {
     mError_L.setMarkup(`<span color="#FF0000">` ~ message ~ `</span>`);
     mError_L.show();
+  }
+
+private:
+  string getDefaultText(string envVar)
+  {
+    import std.process : env = environment;
+
+    string result = env.get(envVar);
+    if (!result) {
+      result = "";
+    }
+
+    return result;
   }
 }
