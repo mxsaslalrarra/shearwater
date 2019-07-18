@@ -119,10 +119,8 @@ template MakeResponse(alias T)
   mixin(`alias MakeResponse = ` ~ T ~ `!(Kind.Response);`);
 }
 
-// NOTE add new modules to this list when adding endpoints to api
-
-alias ReqSymbols = Filter!(IsRequest, __traits(allMembers, matrix.api.login));
+alias ReqSymbols = Filter!(IsRequest, ApiMembers);
 alias Action = SumType!(staticMap!(MakeRequest, ReqSymbols));
 
-alias ResSymbols = Filter!(IsResponse, __traits(allMembers, matrix.api.login));
+alias ResSymbols = Filter!(IsResponse, ApiMembers);
 alias Reaction = SumType!(staticMap!(MakeResponse, ResSymbols));
