@@ -28,8 +28,11 @@ struct Status
 }
 
 mixin template RequestParameters(string Endpoint, Method HttpMethod) {
+  import std.string : capitalize;
+
   enum string endpoint = Endpoint;
   enum Method method = HttpMethod;
+  mixin(`alias ResponseOf = ` ~ Endpoint.capitalize ~ `!(Kind.Response);`);
 }
 
 void execute(Action action, string baseUrl)
