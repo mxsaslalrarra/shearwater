@@ -1,4 +1,4 @@
-module matrix.api.model;
+module matrix.model;
 
 import std.json : JSONValue;
 

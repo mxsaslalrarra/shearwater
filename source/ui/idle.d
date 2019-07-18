@@ -5,7 +5,7 @@ extern(C) static int onIdle(void* data) nothrow
   import std.concurrency : receiveTimeout;
   import core.thread : dur, Thread;
 
-  import matrix.api : Response;
+  import matrix : Response;
   import matrix.api.login : Login;
 
   import ui.main_window : mainWindow;

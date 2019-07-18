@@ -1,4 +1,4 @@
-module matrix.api;
+module matrix;
 
 enum Kind {
   Request,

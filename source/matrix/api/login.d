@@ -2,8 +2,8 @@ module matrix.api.login;
 
 import std.json : JSONValue, parseJSON;
 
-import matrix.api;
-import matrix.api.model : UserIdentifier;
+import matrix;
+import matrix.model : UserIdentifier;
 
 struct Login(Kind K)
   if (K == Kind.Request)

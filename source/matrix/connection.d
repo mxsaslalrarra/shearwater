@@ -4,7 +4,7 @@ void connection(string url)
 {
   import std.concurrency : ownerTid, receiveTimeout, send;
   import core.thread : Thread, dur;
-  import matrix.api : execute, Request;
+  import matrix : execute, Request;
   import matrix.api.login;
 
   bool running = true;

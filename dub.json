@@ -4,7 +4,8 @@
 	],
 	"copyright": "Copyright © 2019, M. Rawcliffe",
 	"dependencies": {
-		"gtk-d": "~>3.9.0"
+		"gtk-d": "~>3.9.0",
+        "sumtype": "~>0.8.9"
 	},
 	"description": "matrix client",
 	"license": "GPLv3",

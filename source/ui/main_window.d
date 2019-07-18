@@ -14,7 +14,7 @@ import gtk.ApplicationWindow: ApplicationWindow;
 import gtk.Button;
 import gtk.Widget;
 
-import matrix.api;
+import matrix;
 import matrix.api.login;
 import matrix.connection : connection;
 
