@@ -50,7 +50,11 @@ public:
       mLoginFrame.loginFailed("Failed to log in");
       stopConnection();
     } else {
+      mState.accessToken = response.accessToken;
+
       // start a sync
+      Action syncRequest = Request!Sync();
+      this.process(syncRequest);
 
       // remove login form and show main ui
       mLoginFrame.hide();
@@ -63,6 +67,8 @@ public:
 
   void onSyncComplete(Response!Sync response)
   {
+    import std.stdio : writeln;
+    writeln(response.value);
   }
 
 private:

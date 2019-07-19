@@ -9,7 +9,7 @@ immutable string EndpointType = "sync";
 struct Sync(Kind K)
   if (K == Kind.Request)
 {
-  string[string] params()
+  string[string] params() const
   {
     string[string] result;
     return result;
@@ -21,8 +21,11 @@ struct Sync(Kind K)
 struct Sync(Kind K)
   if (K == Kind.Response)
 {
+  string value;
+
   void parse(JSONValue data)
   {
+    value = data.toPrettyString();
   }
 
   mixin ResponseParameters!(EndpointType);

@@ -1,6 +1,6 @@
 module matrix.common;
 
-immutable string[string] NULL_PARAMS;
+const string[string] NULL_PARAMS;
 
 string makeParamString(const string[string] params, string concat)
 {
