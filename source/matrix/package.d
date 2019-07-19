@@ -60,9 +60,9 @@ void execute(Action action, State state, string baseUrl)
     (request) {
       static assert (__traits(hasMember, request, "ResponseOf"));
       alias T = typeof(request);
-      //static assert (__traits(hasMember, T, "data") || __traits(hasMember, T, "parse"));
+      static assert (__traits(hasMember, T, "data") || __traits(hasMember, T, "params"));
       alias U = request.ResponseOf;
-      //static assert (__traits(hasMember, U, "parse"));
+      static assert (__traits(hasMember, U, "parse"));
 
       static if (T.requiresAuth) {
         string accessToken = state.accessToken;
