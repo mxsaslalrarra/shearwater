@@ -7,9 +7,7 @@ void connection()
   import std.string : toLower;
   import core.thread : Thread, dur;
 
-  bool running = true;
-
-  while (running) {
+  while (STATE.connected) {
     static foreach (Method; Methods)
     {
       if (mixin(`!` ~ `work_queue_` ~ Method.toLower ~ `.empty`))
@@ -17,8 +15,6 @@ void connection()
         execute(mixin(`work_queue_` ~ Method.toLower).popFront(), STATE.server);
       }
     }
-
-    // TODO force kill onIdle in main thread
 
     Thread.sleep(dur!"msecs"( 0 ));
   }

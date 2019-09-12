@@ -25,6 +25,7 @@ enum HttpMethod {
 
 struct State
 {
+  bool connected = false;
   string server;
   string accessToken;
 }

@@ -9,8 +9,6 @@ extern(C) static int onIdle(void* data) nothrow
 
   import ui.main_window : mainWindow;
 
-  int alive = 1;
-
   try {
     static foreach (Method; Methods)
     {
@@ -25,7 +23,10 @@ extern(C) static int onIdle(void* data) nothrow
     }
   } catch (Throwable t) {}
 
-  // TODO register kill signal to end thread
+  if (!STATE.connected)
+  {
+    return 0;
+  }
 
-  return alive;
+  return 1;
 }

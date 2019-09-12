@@ -95,6 +95,7 @@ private:
 
   void onLogin(Button btn)
   {
+    STATE.connected = true;
     mWorker = new Thread(&connection).start();
     threadsAddIdle(&onIdle, null);
 
@@ -105,7 +106,7 @@ private:
 
   bool onCloseWindow(Event event, Widget widget)
   {
-    if (mWorker.isRunning) {
+    if (STATE.connected) {
       stopConnection();
     }
     return false;
@@ -113,7 +114,8 @@ private:
 
   void stopConnection()
   {
-    // mWorker.kill();
+    STATE.connected = false;
+    mWorker.join();
   }
 }
 
