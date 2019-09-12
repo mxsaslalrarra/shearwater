@@ -26,8 +26,7 @@ import ui.login_frame : LoginFrame;
 class MainWindow : ApplicationWindow
 {
 private:
-  Tid mConnectionTid;
-  State mState;
+  Thread mWorker;
 
 public:
   this(Application app)
@@ -50,10 +49,10 @@ public:
       mLoginFrame.loginFailed("Failed to log in");
       stopConnection();
     } else {
-      mState.accessToken = response.accessToken;
+      STATE.accessToken = response.accessToken;
 
       // start a sync
-      Action syncRequest = Request!Sync();
+      auto syncRequest = Request!Sync();
       this.process(syncRequest);
 
       // remove login form and show main ui
@@ -75,9 +74,9 @@ private:
   LoginFrame mLoginFrame;
   ChatFrame mChatFrame;
 
-  void process(Action action)
+  void process(T)(T action)
   {
-    mConnectionTid.send(action, mState);
+    putWork!T(action);
   }
 
   void initLoginUI()
@@ -96,16 +95,17 @@ private:
 
   void onLogin(Button btn)
   {
-    mConnectionTid = spawnLinked(&connection, mLoginFrame.server);
+    mWorker = new Thread(&connection).start();
     threadsAddIdle(&onIdle, null);
 
-    Action req = Request!Login(mLoginFrame.username, mLoginFrame.password);
+    STATE.server = mLoginFrame.server;
+    auto req = Request!Login(mLoginFrame.username, mLoginFrame.password);
     this.process(req);
   }
 
   bool onCloseWindow(Event event, Widget widget)
   {
-    if (mConnectionTid != Tid.init) {
+    if (mWorker.isRunning) {
       stopConnection();
     }
     return false;
@@ -113,7 +113,7 @@ private:
 
   void stopConnection()
   {
-    mConnectionTid.send(false); // stop connection worker
+    // mWorker.kill();
   }
 }
 

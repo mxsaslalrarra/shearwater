@@ -1,10 +1,12 @@
 module matrix;
 
+import std.container : DList;
 import std.meta;
 import std.range : chain;
+import std.string : toLower;
 import std.traits;
 
-import sumtype;
+import core.thread;
 
 import matrix.api;
 
@@ -16,15 +18,18 @@ enum Kind {
 alias Request(alias T)  = T!(Kind.Request);
 alias Response(alias T) = T!(Kind.Response);
 
-enum Method {
+enum HttpMethod {
   GET,
   POST,
 }
 
 struct State
 {
+  string server;
   string accessToken;
 }
+
+__gshared static State STATE;
 
 struct Status
 {
@@ -32,11 +37,11 @@ struct Status
   string message;
 }
 
-mixin template RequestParameters(string Endpoint, Method HttpMethod, bool Auth = true) {
+mixin template RequestParameters(string Endpoint, HttpMethod Method, bool Auth = true) {
   import std.string : capitalize;
 
   enum string endpoint = Endpoint;
-  enum Method method = HttpMethod;
+  enum HttpMethod method = Method;
   enum bool requiresAuth = Auth;
   mixin(`alias ResponseOf = ` ~ Endpoint.capitalize ~ `!(Kind.Response);`);
 }
@@ -47,25 +52,25 @@ mixin template ResponseParameters(string Type)
   Status status;
 }
 
-void execute(Action action, State state, string baseUrl)
+void execute(T)(T request, string baseUrl)
 {
-  import std.concurrency : ownerTid, send;
   import std.format : format;
   import std.json : JSONException, JSONValue, parseJSON;
   import std.net.curl : CurlException, HTTPStatusException;
 
   import matrix.common : buildUrl;
 
-  action.match!(
-    (request) {
+  static foreach (Method; Methods)
+  {
+    static if (mixin(`is(` ~ Method ~ `!(Kind.Request) == T)`))
+    {
       static assert (__traits(hasMember, request, "ResponseOf"));
-      alias T = typeof(request);
       static assert (__traits(hasMember, T, "data") || __traits(hasMember, T, "params"));
       alias U = request.ResponseOf;
       static assert (__traits(hasMember, U, "parse"));
 
       static if (T.requiresAuth) {
-        string accessToken = state.accessToken;
+        string accessToken = STATE.accessToken;
       } else {
         string accessToken = "";
       }
@@ -76,7 +81,7 @@ void execute(Action action, State state, string baseUrl)
         string url = buildUrl(baseUrl, request.endpoint, accessToken);
       }
 
-      static if (T.method == Method.GET) {
+      static if (T.method == HttpMethod.GET) {
         import std.net.curl : get;
         enum http = `get(url)`;
       } else {
@@ -98,12 +103,9 @@ void execute(Action action, State state, string baseUrl)
         response.status = Status(false, e.toString);
       }
 
-      // cast response to reaction
-      Reaction result = response;
-
-      ownerTid.send(result);
+      mixin(`main_queue_` ~ Method.toLower ~ ` ~= response;`);
     }
-  );
+  }
 }
 
 template IsRequest(alias T)
@@ -117,11 +119,6 @@ template IsRequest(alias T)
   }
 }
 
-template MakeRequest(alias T)
-{
-  mixin(`alias MakeRequest = ` ~ T ~ `!(Kind.Request);`);
-}
-
 template IsResponse(alias T)
 {
   static if (__traits(compiles, mixin(T ~ `!(Kind.Response)`))) {
@@ -131,13 +128,52 @@ template IsResponse(alias T)
   }
 }
 
-template MakeResponse(alias T)
+alias Methods = Filter!(templateOr!(IsRequest, IsResponse), ApiMembers);
+
+// Queue Stuff
+
+static foreach (Method; Methods)
 {
-  mixin(`alias MakeResponse = ` ~ T ~ `!(Kind.Response);`);
+  static if (IsRequest!Method || IsResponse!Method)
+  {
+    mixin(`__gshared static auto main_queue_` ~ Method.toLower ~
+          ` = DList!(` ~ Method ~ `!(Kind.Response))();`);
+    mixin(`__gshared static auto work_queue_` ~ Method.toLower ~
+          ` = DList!(` ~ Method ~ `!(Kind.Request))();`);
+  }
 }
 
-alias ReqSymbols = Filter!(IsRequest, ApiMembers);
-alias Action = SumType!(staticMap!(MakeRequest, ReqSymbols));
+T popFront(T)(DList!T queue)
+{
+  T result = queue.front;
+  queue.removeFront();
+  return result;
+}
 
-alias ResSymbols = Filter!(IsResponse, ApiMembers);
-alias Reaction = SumType!(staticMap!(MakeResponse, ResSymbols));
+void putWork(T)(T value)
+{
+  static foreach (Method; Methods)
+  {
+    static if (mixin(`is(` ~ Method ~ `!(Kind.Request) == T)`))
+    {
+      mixin(`work_queue_` ~ Method.toLower ~ ` ~= value;`);
+    }
+  }
+}
+
+auto takeResult(T)()
+{
+  static foreach (Method; Methods)
+  {
+    static if (mixin(`is(` ~ Method ~ `!(Kind.Response) == T)`))
+    {
+      enum queue = `main_queue_` ~ Method.toLower;
+
+      if (mixin(`!` ~ queue ~ `.empty`)) {
+        return mixin(queue ~ `.popFront()`);
+      }
+    }
+  }
+
+  return T.init;
+}

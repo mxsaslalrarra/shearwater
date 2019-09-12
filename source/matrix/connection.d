@@ -1,22 +1,25 @@
 module matrix.connection;
 
-void connection(string url)
+import matrix;
+
+void connection()
 {
-  import std.concurrency : ownerTid, receiveTimeout, send;
+  import std.string : toLower;
   import core.thread : Thread, dur;
-  import matrix : Action, execute, State;
 
   bool running = true;
 
   while (running) {
-    receiveTimeout(dur!"msecs"(0),
-      (Action a, State state) => a.execute(state, url),
-      (bool cont) {
-        ownerTid.send(0); // force kill onIdle in main thread
-        running = cont;
-      },
-    );
+    static foreach (Method; Methods)
+    {
+      if (mixin(`!` ~ `work_queue_` ~ Method.toLower ~ `.empty`))
+      {
+        execute(mixin(`work_queue_` ~ Method.toLower).popFront(), STATE.server);
+      }
+    }
 
-    Thread.sleep(dur!"seconds"(0));
+    // TODO force kill onIdle in main thread
+
+    Thread.sleep(dur!"msecs"( 0 ));
   }
 }

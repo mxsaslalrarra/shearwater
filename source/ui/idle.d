@@ -1,29 +1,31 @@
 module ui.idle;
 
+import matrix;
+import matrix.api;
+
 extern(C) static int onIdle(void* data) nothrow
 {
-  import std.concurrency : receiveTimeout;
   import std.string : capitalize;
-  import core.thread : dur, Thread;
 
-  import sumtype : match;
-
-  import matrix : Reaction;
   import ui.main_window : mainWindow;
 
   int alive = 1;
 
   try {
-    receiveTimeout(dur!"msecs"(0),
-      (Reaction response) => response.match!(
-        (res) =>
-          mixin(`mainWindow.on` ~ res.responseType.capitalize ~ `Complete`)(res)
-      ),
-      (int kill) {
-        alive = kill;
+    static foreach (Method; Methods)
+    {
+      mixin(`auto result` ~ Method ~ ` = takeResult!(` ~ Method ~ `!(Kind.Response))();`);
+      //auto result = takeResult!(mixin(Method ~ `!(Kind.Response)`))();
+      if (mixin(`result` ~ Method).status.ok)
+      {
+        mixin(`mainWindow.on` ~ mixin(`result` ~ Method).responseType.capitalize ~ `Complete`)(
+          mixin(`result` ~ Method)
+        );
       }
-    );
+    }
   } catch (Throwable t) {}
+
+  // TODO register kill signal to end thread
 
   return alive;
 }
