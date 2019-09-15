@@ -76,7 +76,7 @@ private:
 
   void process(T)(T action)
   {
-    putWork!T(action);
+    put!T(action);
   }
 
   void initLoginUI()

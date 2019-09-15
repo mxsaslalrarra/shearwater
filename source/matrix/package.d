@@ -25,9 +25,26 @@ enum HttpMethod {
 
 struct State
 {
-  bool connected = false;
   string server;
   string accessToken;
+
+  @property bool connected() nothrow
+  {
+    synchronized
+    {
+      return _connected;
+    }
+  }
+
+  @property void connected(bool c) nothrow
+  {
+    synchronized
+    {
+      _connected = c;
+    }
+  }
+private:
+  bool _connected = false;
 }
 
 __gshared static State STATE;
@@ -137,9 +154,9 @@ static foreach (Method; Methods)
 {
   static if (IsRequest!Method || IsResponse!Method)
   {
-    mixin(`__gshared static auto main_queue_` ~ Method.toLower ~
+    mixin(`private __gshared static auto main_queue_` ~ Method.toLower ~
           ` = DList!(` ~ Method ~ `!(Kind.Response))();`);
-    mixin(`__gshared static auto work_queue_` ~ Method.toLower ~
+    mixin(`private __gshared static auto work_queue_` ~ Method.toLower ~
           ` = DList!(` ~ Method ~ `!(Kind.Request))();`);
   }
 }
@@ -151,30 +168,81 @@ T popFront(T)(DList!T queue)
   return result;
 }
 
-void putWork(T)(T value)
+private auto ref Q(string group, string method)()
 {
+  return mixin(group ~ `_queue_` ~ method.toLower);
+}
+
+private auto ref MQ(string method)() { return Q!("main", method)(); }
+private auto ref WQ(string method)() { return Q!("work", method)(); }
+
+/++
+ + Place a Request or Response on the relevant queue.
+ +/
+void put(T)(T value)
+{
+  import std.traits : TemplateArgsOf;
+
   static foreach (Method; Methods)
   {
-    static if (mixin(`is(` ~ Method ~ `!(Kind.Request) == T)`))
+    static if (mixin(`is(` ~ Method ~ `!(TemplateArgsOf!(T)[0]) == T)`))
     {
-      mixin(`work_queue_` ~ Method.toLower ~ ` ~= value;`);
+      synchronized
+      {
+        static if (TemplateArgsOf!(T)[0] == Kind.Request)
+        {
+          WQ!(Method.toLower) ~= value;
+        }
+        else
+        {
+          MQ!(Method.toLower) ~= value;
+        }
+      }
     }
   }
 }
 
-auto takeResult(T)()
+/++
+ + Take a Request or Response from the relevant queue.
+ + Blocks by default.
+ + If Blocking is false then this may raise an AssertionError from
+ + DList if the queue is empty.
+ +/
+auto take(T, bool Blocking = true)()
 {
+  import std.traits : TemplateArgsOf;
+
   static foreach (Method; Methods)
   {
-    static if (mixin(`is(` ~ Method ~ `!(Kind.Response) == T)`))
+    static if (mixin(`is(` ~ Method ~ `!(TemplateArgsOf!(T)[0]) == T)`))
     {
-      enum queue = `main_queue_` ~ Method.toLower;
+      try
+      {
+        synchronized
+        {
+          static if (TemplateArgsOf!(T)[0] == Kind.Request)
+          {
+            auto queue = WQ!(Method.toLower);
+          }
+          else
+          {
+            auto queue = MQ!(Method.toLower);
+          }
 
-      if (mixin(`!` ~ queue ~ `.empty`)) {
-        return mixin(queue ~ `.popFront()`);
-      }
+          static if (Blocking)
+          {
+            while (queue.empty)
+            {
+              Thread.sleep(dur!"msecs"( 0 ));
+            }
+          }
+
+          return queue.popFront();
+        }
+      } catch(Throwable t) {} // if we don't catch here, the thread doesnt terminate properly
     }
   }
 
-  return T.init;
+  // should never get here
+  assert(0);
 }

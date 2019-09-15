@@ -1,6 +1,7 @@
 module matrix.connection;
 
 import matrix;
+import matrix.api;
 
 void connection()
 {
@@ -10,10 +11,11 @@ void connection()
   while (STATE.connected) {
     static foreach (Method; Methods)
     {
-      if (mixin(`!` ~ `work_queue_` ~ Method.toLower ~ `.empty`))
+      // TODO use std parallelism for execute
+      try
       {
-        execute(mixin(`work_queue_` ~ Method.toLower).popFront(), STATE.server);
-      }
+        take!(mixin(Method ~ `!(Kind.Request)`), false)().execute(STATE.server);
+      } catch (Throwable t) {}
     }
 
     Thread.sleep(dur!"msecs"( 0 ));

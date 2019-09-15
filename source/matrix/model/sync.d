@@ -4,7 +4,7 @@ struct SyncModel
 {
   string nextBatch;
   RoomsModel rooms;
-  PrecenseModel precense;
+  PresenceModel presence;
   AccountDataModel accountData;
 }
 

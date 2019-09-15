@@ -9,19 +9,17 @@ extern(C) static int onIdle(void* data) nothrow
 
   import ui.main_window : mainWindow;
 
-  try {
-    static foreach (Method; Methods)
+  static foreach (Method; Methods)
+  {
+    try
     {
-      mixin(`auto result` ~ Method ~ ` = takeResult!(` ~ Method ~ `!(Kind.Response))();`);
-      //auto result = takeResult!(mixin(Method ~ `!(Kind.Response)`))();
-      if (mixin(`result` ~ Method).status.ok)
+      auto result = take!(mixin(Method ~ `!(Kind.Response)`), false)();
+      if (result.status.ok)
       {
-        mixin(`mainWindow.on` ~ mixin(`result` ~ Method).responseType.capitalize ~ `Complete`)(
-          mixin(`result` ~ Method)
-        );
+        mixin(`mainWindow.on` ~ result.responseType.capitalize ~ `Complete`)(result);
       }
-    }
-  } catch (Throwable t) {}
+    } catch (Throwable t) {}
+  }
 
   if (!STATE.connected)
   {
