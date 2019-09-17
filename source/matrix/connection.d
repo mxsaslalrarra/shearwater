@@ -7,17 +7,21 @@ void connection()
 {
   import std.string : toLower;
   import core.thread : Thread, dur;
+  import queue : take;
 
   while (STATE.connected) {
     static foreach (Method; Methods)
     {
       // TODO use std parallelism for execute
-      try
       {
-        take!(mixin(Method ~ `!(Kind.Request)`), false)().execute(STATE.server);
-      } catch (Throwable t) {}
+        auto request = take!(mixin(Method ~ `!(Kind.Request)`))();
+        if (!request.isNull)
+        {
+          request.execute(STATE.server);
+        }
+      }
     }
 
-    Thread.sleep(dur!"msecs"( 0 ));
+    Thread.sleep(dur!"seconds"( 1 ));
   }
 }

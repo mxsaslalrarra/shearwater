@@ -76,6 +76,7 @@ private:
 
   void process(T)(T action)
   {
+    import queue : put;
     put!T(action);
   }
 

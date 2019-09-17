@@ -8,6 +8,7 @@ import std.traits;
 
 import core.thread;
 
+import queue;
 import matrix.api;
 
 enum Kind {
@@ -17,6 +18,12 @@ enum Kind {
 
 alias Request(alias T)  = T!(Kind.Request);
 alias Response(alias T) = T!(Kind.Response);
+
+unittest
+{
+  assert(is(Request!Sync == Sync!(Kind.Request)));
+  assert(is(Response!Sync == Sync!(Kind.Response)));
+}
 
 enum HttpMethod {
   GET,
@@ -80,7 +87,7 @@ void execute(T)(T request, string baseUrl)
 
   static foreach (Method; Methods)
   {
-    static if (mixin(`is(` ~ Method ~ `!(Kind.Request) == T)`))
+    static if (methodMatches!(Method, T))
     {
       static assert (__traits(hasMember, request, "ResponseOf"));
       static assert (__traits(hasMember, T, "data") || __traits(hasMember, T, "params"));
@@ -121,7 +128,7 @@ void execute(T)(T request, string baseUrl)
         response.status = Status(false, e.toString);
       }
 
-      mixin(`main_queue_` ~ Method.toLower ~ ` ~= response;`);
+      put(response);
     }
   }
 }
@@ -148,101 +155,21 @@ template IsResponse(alias T)
 
 alias Methods = Filter!(templateOr!(IsRequest, IsResponse), ApiMembers);
 
-// Queue Stuff
-
-static foreach (Method; Methods)
-{
-  static if (IsRequest!Method || IsResponse!Method)
-  {
-    mixin(`private __gshared static auto main_queue_` ~ Method.toLower ~
-          ` = DList!(` ~ Method ~ `!(Kind.Response))();`);
-    mixin(`private __gshared static auto work_queue_` ~ Method.toLower ~
-          ` = DList!(` ~ Method ~ `!(Kind.Request))();`);
-  }
-}
-
-T popFront(T)(DList!T queue)
-{
-  T result = queue.front;
-  queue.removeFront();
-  return result;
-}
-
-private auto ref Q(string group, string method)()
-{
-  return mixin(group ~ `_queue_` ~ method.toLower);
-}
-
-private auto ref MQ(string method)() { return Q!("main", method)(); }
-private auto ref WQ(string method)() { return Q!("work", method)(); }
-
 /++
- + Place a Request or Response on the relevant queue.
+ + Match the string representation of a type to it's actual type.
+ + Will unwrap T if it is Nullable
  +/
-void put(T)(T value)
+bool methodMatches(string Method, T)()
 {
-  import std.traits : TemplateArgsOf;
+  import std.traits : TemplateOf, TemplateArgsOf;
+  import std.typecons : Nullable;
 
-  static foreach (Method; Methods)
+  static if (is(Nullable!(TemplateArgsOf!T) == T!(TemplateArgsOf!T)))
   {
-    static if (mixin(`is(` ~ Method ~ `!(TemplateArgsOf!(T)[0]) == T)`))
-    {
-      synchronized
-      {
-        static if (TemplateArgsOf!(T)[0] == Kind.Request)
-        {
-          WQ!(Method.toLower) ~= value;
-        }
-        else
-        {
-          MQ!(Method.toLower) ~= value;
-        }
-      }
-    }
+    return mixin(`is(Nullable!(` ~ Method ~ `!(TemplateArgsOf!(TemplateArgsOf!T))) == T)`);
   }
-}
-
-/++
- + Take a Request or Response from the relevant queue.
- + Blocks by default.
- + If Blocking is false then this may raise an AssertionError from
- + DList if the queue is empty.
- +/
-auto take(T, bool Blocking = true)()
-{
-  import std.traits : TemplateArgsOf;
-
-  static foreach (Method; Methods)
+  else
   {
-    static if (mixin(`is(` ~ Method ~ `!(TemplateArgsOf!(T)[0]) == T)`))
-    {
-      try
-      {
-        synchronized
-        {
-          static if (TemplateArgsOf!(T)[0] == Kind.Request)
-          {
-            auto queue = WQ!(Method.toLower);
-          }
-          else
-          {
-            auto queue = MQ!(Method.toLower);
-          }
-
-          static if (Blocking)
-          {
-            while (queue.empty)
-            {
-              Thread.sleep(dur!"msecs"( 0 ));
-            }
-          }
-
-          return queue.popFront();
-        }
-      } catch(Throwable t) {} // if we don't catch here, the thread doesnt terminate properly
-    }
+    return mixin(`is(` ~ Method ~ `!(TemplateArgsOf!T) == T)`);
   }
-
-  // should never get here
-  assert(0);
 }
