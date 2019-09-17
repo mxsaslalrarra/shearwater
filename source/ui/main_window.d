@@ -66,8 +66,9 @@ public:
 
   void onSyncComplete(Response!Sync response)
   {
+    // TODO do something with the response model here
     import std.stdio : writeln;
-    writeln(response.value);
+    writeln(response.model.nextBatch);
   }
 
 private:
