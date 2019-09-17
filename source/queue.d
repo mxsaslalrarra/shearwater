@@ -41,7 +41,6 @@ T popFront(T)(ref DList!T queue)
 
 unittest
 {
-  import std.range : popFront;
   DList!int queue = DList!int();
   queue ~= 10;
   int result = queue.popFront();
@@ -68,7 +67,6 @@ unittest
   queue.insertFront(request);
 
   auto result = queue.popFront();
-  assert(result.method == "GET");
   assert(is(typeof(result) == Request!Sync));
 }
 
