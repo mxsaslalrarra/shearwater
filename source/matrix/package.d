@@ -133,6 +133,20 @@ void execute(T)(T request, string baseUrl)
   }
 }
 
+unittest
+{
+  // demonstrate execute() workflow, but it will fail due to http request
+  auto login = Request!Login();
+  put(login);
+  auto result = take!(Request!Login, true)();
+  assert(!result.isNull);
+  result.execute("localhost");
+
+  auto response = take!(Response!Login, true)();
+  assert(!response.isNull);
+  assert(!response.status.ok);
+}
+
 template IsRequest(alias T)
 {
   static if (__traits(compiles, mixin(T ~ `!(Kind.Request)`))) {
@@ -144,6 +158,12 @@ template IsRequest(alias T)
   }
 }
 
+unittest
+{
+  assert( IsRequest!("Login"));
+  assert(!IsRequest!("FooBar"));
+}
+
 template IsResponse(alias T)
 {
   static if (__traits(compiles, mixin(T ~ `!(Kind.Response)`))) {
@@ -151,6 +171,12 @@ template IsResponse(alias T)
   } else {
     const IsResponse = false;
   }
+}
+
+unittest
+{
+  assert( IsResponse!("Login"));
+  assert(!IsResponse!("FooBar"));
 }
 
 alias Methods = Filter!(templateOr!(IsRequest, IsResponse), ApiMembers);
@@ -172,4 +198,19 @@ bool methodMatches(string Method, T)()
   {
     return mixin(`is(` ~ Method ~ `!(TemplateArgsOf!T) == T)`);
   }
+}
+
+unittest
+{
+  import std.typecons : Nullable;
+
+  assert(methodMatches!("Sync", Request!Sync));
+  assert(!methodMatches!("Login", Request!Sync));
+  assert(methodMatches!("Login", Response!Login));
+  assert(!methodMatches!("Sync", Response!Login));
+
+  assert(methodMatches!("Sync", Nullable!(Request!Sync)));
+  assert(!methodMatches!("Login", Nullable!(Request!Sync)));
+  assert(methodMatches!("Login", Nullable!(Response!Login)));
+  assert(!methodMatches!("Sync", Nullable!(Response!Login)));
 }
