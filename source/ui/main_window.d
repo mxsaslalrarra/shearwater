@@ -99,7 +99,7 @@ private:
   {
     STATE.connected = true;
     mWorker = new Thread(&connection).start();
-    threadsAddIdle(&onIdle, null);
+    threadsAddTimeoutSeconds(1, &onIdle, null);
 
     STATE.server = mLoginFrame.server;
     auto req = Request!Login(mLoginFrame.username, mLoginFrame.password);
