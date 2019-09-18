@@ -2,6 +2,8 @@ module matrix.model.sync;
 
 import std.json;
 
+alias EventContent = JSONValue;
+
 E parseSection(T, Data, E = Exception)(ref T result, Data data)
 {
   import std.exception : collectException;
@@ -117,8 +119,7 @@ struct StateEvent
   string sender;
   long originServerTs;
   UnsignedData unsigned;
-  // NOTE in the spec, prevContent is "EventContent" but that isn't defined
-  JSONValue prevContent;
+  EventContent prevContent;
   string stateKey;
 
   this(const ref JSONValue data)
@@ -156,9 +157,31 @@ struct Timeline
   bool limited;
   string prevBatch;
 
-  // TODO
   this(const ref JSONValue data)
   {
+    events = data["events"].array.parseEvents!RoomEvent;
+    parseAttr(limited, data["limited"].boolean);
+    parseAttr(prevBatch, data["prev_batch"].str);
+  }
+}
+
+struct RoomEvent
+{
+  JSONValue content;
+  string type;
+  string eventId;
+  string sender;
+  long originServerTs;
+  UnsignedData unsigned;
+
+  this(const ref JSONValue data)
+  {
+    parseAttr(content, data["content"]);
+    parseAttr(type, data["type"].str);
+    parseAttr(eventId, data["event_id"].str);
+    parseAttr(sender, data["sender"].str);
+    parseAttr(originServerTs, data["origin_server_ts"].integer);
+    parseSection(unsigned, data["unsigned"]);
   }
 }
 
@@ -166,17 +189,23 @@ struct Timeline
 
 struct Ephemeral
 {
-  // TODO
+  Event[] events;
+
   this(const ref JSONValue data)
   {
+    events = data["events"].array.parseEvents!Event;
   }
 }
 
 struct UnreadNotificationCounts
 {
-  // TODO
+  long highlightCount;
+  long notificationCount;
+
   this(const ref JSONValue data)
   {
+    parseAttr(highlightCount, data["highlight_count"].integer);
+    parseAttr(notificationCount, data["notification_count"].integer);
   }
 }
 
@@ -184,17 +213,51 @@ struct UnreadNotificationCounts
 
 struct InvitedRoom
 {
-  // TODO
+  InviteState inviteState;
+
   this(const ref JSONValue data)
   {
+    parseSection(inviteState, data["invite_state"]);
+  }
+}
+
+struct InviteState
+{
+  StrippedState[] events;
+
+  this(const ref JSONValue data)
+  {
+    events = data["events"].array.parseEvents!StrippedState;
+  }
+}
+
+struct StrippedState
+{
+  EventContent content;
+  string stateKey;
+  string type;
+  string sender;
+
+  this(const ref JSONValue data)
+  {
+    parseAttr(content, data["content"]);
+    parseAttr(stateKey, data["state_key"].str);
+    parseAttr(type, data["type"].str);
+    parseAttr(sender, data["sender"].str);
   }
 }
 
 struct LeftRoom
 {
-  // TODO
+  RoomState state;
+  Timeline timeline;
+  AccountDataModel accountData;
+
   this(const ref JSONValue data)
   {
+    parseSection(state, data["state"]);
+    parseSection(timeline, data["timeline"]);
+    parseSection(accountData, data["account_data"]);
   }
 }
 
