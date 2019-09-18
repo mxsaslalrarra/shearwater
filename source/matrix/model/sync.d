@@ -2,6 +2,23 @@ module matrix.model.sync;
 
 import std.json;
 
+E parseSection(T, Data, E = Exception)(ref T result, Data data)
+{
+  import std.exception : collectException;
+  return T(data).collectException(result);
+}
+
+void parseAttr(T, Data, E = Exception)(ref T result, Data data)
+{
+  try
+  {
+    result = data;
+  }
+  catch (JSONException e) {}
+}
+
+//
+
 struct SyncModel
 {
   string nextBatch;
@@ -11,10 +28,10 @@ struct SyncModel
 
   this(const ref JSONValue data)
   {
-    nextBatch = data["next_batch"].str;
-    rooms = RoomsModel(data["rooms"]);
-    presence = PresenceModel(data["presence"]);
-    accountData = AccountDataModel(data["account_data"]);
+    parseAttr(nextBatch, data["next_batch"].str);
+    parseSection(rooms, data["rooms"]);
+    parseSection(presence, data["presence"]);
+    parseSection(accountData, data["account_data"]);
   }
 }
 
@@ -38,19 +55,19 @@ struct JoinedRoom
 {
   RoomSummary summary;
   RoomState state;
-  Timeline timeline;
-  Ephemeral ephemeral;
+  Timeline timeline; // TODO
+  Ephemeral ephemeral; // TODO
   AccountDataModel accountData;
-  UnreadNotificationCounts unreadNotifications;
+  UnreadNotificationCounts unreadNotifications; // TODO
 
   this(const ref JSONValue data)
   {
-    summary = RoomSummary(data["summary"]);
-    state = RoomState(data["state"]);
-    timeline = Timeline(data["timeline"]);
-    ephemeral = Ephemeral(data["ephemeral"]);
-    accountData = AccountDataModel(data["account_data"]);
-    unreadNotifications = UnreadNotificationCounts(data["unread_notifications"]);
+    parseSection(summary, data["summary"]);
+    parseSection(state, data["state"]);
+    parseSection(timeline, data["timeline"]);
+    parseSection(ephemeral, data["ephemeral"]);
+    parseSection(accountData, data["account_data"]);
+    parseSection(unreadNotifications, data["unread_notifications"]);
   }
 
   static JoinedRoom[string] parse(const ref JSONValue data)
@@ -68,27 +85,84 @@ struct JoinedRoom
 
 struct RoomSummary
 {
-  // TODO
+  string[] heroes;
+  long joined_member_count;
+  long invited_member_count;
+
   this(const ref JSONValue data)
   {
+    import std.conv : to;
+
+    parseAttr(heroes, data["m.heroes"].array.to!(string[]));
+    parseAttr(joined_member_count, data["m.joined_member_count"].integer);
+    parseAttr(invited_member_count, data["m.invited_member_count"].integer);
   }
 }
 
 struct RoomState
 {
+  StateEvent[] events;
+
+  this(const ref JSONValue data)
+  {
+    events = data["events"].array.parseEvents!StateEvent;
+  }
+}
+
+struct StateEvent
+{
+  JSONValue content;
+  string type;
+  string eventId;
+  string sender;
+  long originServerTs;
+  UnsignedData unsigned;
+  // NOTE in the spec, prevContent is "EventContent" but that isn't defined
+  JSONValue prevContent;
+  string stateKey;
+
+  this(const ref JSONValue data)
+  {
+    parseAttr(content, data["content"]);
+    parseAttr(type, data["type"].str);
+    parseAttr(eventId, data["event_id"].str);
+    parseAttr(sender, data["sender"].str);
+    parseAttr(originServerTs, data["origin_server_ts"].integer);
+    parseSection(unsigned, data["unsigned"]);
+    parseAttr(prevContent, data["prev_content"]);
+    parseAttr(stateKey, data["state_key"].str);
+  }
+}
+
+struct UnsignedData
+{
+  long age;
+  Event redactedBecause;
+  string transactionId;
+
+  this(const ref JSONValue data)
+  {
+    parseAttr(age, data["age"].integer);
+    parseSection(redactedBecause, data["redacted_because"]);
+    parseAttr(transactionId, data["transaction_id"].str);
+  }
+}
+
+// 
+
+struct Timeline
+{
+  RoomEvent[] events;
+  bool limited;
+  string prevBatch;
+
   // TODO
   this(const ref JSONValue data)
   {
   }
 }
 
-struct Timeline
-{
-  // TODO
-  this(const ref JSONValue data)
-  {
-  }
-}
+//
 
 struct Ephemeral
 {
@@ -132,7 +206,7 @@ struct AccountDataModel
 
   this(const ref JSONValue data)
   {
-    events = data["events"].array.parseEvents;
+    events = data["events"].array.parseEvents!Event;
   }
 }
 
@@ -144,7 +218,7 @@ struct PresenceModel
 
   this(const ref JSONValue data)
   {
-    events = data["events"].array.parseEvents;
+    events = data["events"].array.parseEvents!Event;
   }
 }
 
@@ -162,9 +236,9 @@ struct Event
   }
 }
 
-Event[] parseEvents(const ref JSONValue[] data)
+T[] parseEvents(T)(const ref JSONValue[] data)
 {
   import std.algorithm : map;
   import std.array : array;
-  return data.map!(evt => Event(evt)).array;
+  return data.map!(evt => T(evt)).array;
 }
