@@ -20,7 +20,7 @@ struct Filter(Kind K)
     return "";
   }
 
-  mixin RequestParameters!(EndpointType, "Filter", HttpMethod.POST);
+  mixin RequestParameters!(EndpointType, HttpMethod.POST);
 }
 
 struct Filter(Kind K)

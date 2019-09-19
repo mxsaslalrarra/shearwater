@@ -68,12 +68,20 @@ struct Status
   string message;
 }
 
-mixin template RequestParameters(string Endpoint, string ResponseKind,
-                                 HttpMethod Method, bool Auth = true) {
+mixin template RequestParameters(string Endpoint, HttpMethod Method, bool Auth = true) {
+  import std.array : split;
+
   enum string endpoint = Endpoint;
   enum HttpMethod method = Method;
   enum bool requiresAuth = Auth;
-  mixin(`alias ResponseOf = ` ~ ResponseKind ~ `!(Kind.Response);`);
+  static if (is(typeof(this) == T!A, alias T, A...))
+  {
+    mixin(`alias ResponseOf = ` ~ T.stringof.split('(')[0] ~ `!(Kind.Response);`);
+  }
+  else
+  {
+    static assert (0);
+  }
 }
 
 mixin template ResponseParameters(string Type)
