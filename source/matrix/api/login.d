@@ -26,7 +26,7 @@ struct Login(Kind K)
     return data.toString;
   }
 
-  mixin RequestParameters!(EndpointType, HttpMethod.POST, false);
+  mixin RequestParameters!(EndpointType, "Login", HttpMethod.POST, false);
 
 private:
   enum string UserIdentifierType = "m.id.user";

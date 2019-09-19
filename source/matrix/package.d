@@ -68,13 +68,12 @@ struct Status
   string message;
 }
 
-mixin template RequestParameters(string Endpoint, HttpMethod Method, bool Auth = true) {
-  import std.string : capitalize;
-
+mixin template RequestParameters(string Endpoint, string ResponseKind,
+                                 HttpMethod Method, bool Auth = true) {
   enum string endpoint = Endpoint;
   enum HttpMethod method = Method;
   enum bool requiresAuth = Auth;
-  mixin(`alias ResponseOf = ` ~ Endpoint.capitalize ~ `!(Kind.Response);`);
+  mixin(`alias ResponseOf = ` ~ ResponseKind ~ `!(Kind.Response);`);
 }
 
 mixin template ResponseParameters(string Type)
@@ -106,9 +105,21 @@ void execute(T)(T request, string baseUrl)
         string accessToken = "";
       }
 
-      static if (__traits(hasMember, T, "params")) {
-        string url = buildUrl(baseUrl, request.endpoint, accessToken, request.params);
-      } else {
+      static if (__traits(hasMember, T, "params"))
+      {
+        static if (__traits(hasMember, T, "urlParams"))
+        {
+          string url = buildUrl(baseUrl,
+                                request.endpoint.format(request.urlParams.expand),
+                                accessToken, request.params);
+        }
+        else
+        {
+          string url = buildUrl(baseUrl, request.endpoint, accessToken, request.params);
+        }
+      }
+      else
+      {
         string url = buildUrl(baseUrl, request.endpoint, accessToken);
       }
 

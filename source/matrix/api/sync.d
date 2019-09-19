@@ -17,7 +17,7 @@ struct Sync(Kind K)
     return result;
   }
 
-  mixin RequestParameters!(EndpointType, HttpMethod.GET);
+  mixin RequestParameters!(EndpointType, "Sync", HttpMethod.GET);
 }
 
 struct Sync(Kind K)
