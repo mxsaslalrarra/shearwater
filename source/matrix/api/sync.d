@@ -37,5 +37,19 @@ struct Sync(Kind K)
     }
   }
 
+  string[] getMessages(string room)
+  {
+    import std.algorithm : filter, map;
+    import std.array : array;
+    import std.conv : to;
+
+    return model.rooms.join[room]
+                .timeline.events
+                .filter!(evt => evt.type == "m.text")
+                .map!(evt => evt.content["body"].str)
+                .array
+                .to!(string[]);
+  }
+
   mixin ResponseParameters!(EndpointType);
 }

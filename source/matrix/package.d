@@ -30,28 +30,34 @@ enum HttpMethod {
   POST,
 }
 
+mixin template StateProp(T, string name)
+{
+  mixin(`private ` ~ T.stringof ~ ` _` ~ name ~ `;
+    @property ` ~ T.stringof ~ ` ` ~ name ~ `() nothrow
+    {
+      synchronized
+      {
+        return _` ~ name ~ `;
+      }
+    }
+
+    @property void ` ~ name ~ `(` ~ T.stringof ~ ` prop) nothrow
+    {
+      synchronized
+      {
+        _` ~ name ~ ` = prop;
+      }
+    }`
+  );
+}
+
 struct State
 {
-  string server;
-  string accessToken;
-
-  @property bool connected() nothrow
-  {
-    synchronized
-    {
-      return _connected;
-    }
-  }
-
-  @property void connected(bool c) nothrow
-  {
-    synchronized
-    {
-      _connected = c;
-    }
-  }
-private:
-  bool _connected = false;
+  alias _ = StateProp;
+  mixin _!(string, "server");
+  mixin _!(string, "accessToken");
+  mixin _!(string, "userId");
+  mixin _!(bool, "connected");
 }
 
 __gshared static State STATE;

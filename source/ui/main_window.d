@@ -50,6 +50,7 @@ public:
       stopConnection();
     } else {
       STATE.accessToken = response.accessToken;
+      STATE.userId = response.userId;
 
       // start a sync
       auto syncRequest = Request!Sync();
@@ -66,9 +67,15 @@ public:
 
   void onSyncComplete(Response!Sync response)
   {
-    // TODO do something with the response model here
+    import std.algorithm : filter, map;
+    import std.array : array;
     import std.stdio : writeln;
-    writeln(response.model.nextBatch);
+    auto roomId = response.model.rooms.join.keys[0];
+    writeln(
+        response.model.rooms.join[roomId].timeline.events
+                .filter!(evt => evt.type == "m.text")
+                .array
+    );
   }
 
 private:

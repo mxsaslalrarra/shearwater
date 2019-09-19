@@ -12,6 +12,8 @@ import ui.room_list;
 
 class ChatFrame : Frame
 {
+  ChatPane chat;
+
   this()
   {
     super("");
@@ -28,8 +30,8 @@ class ChatFrame : Frame
 
     auto vbox = new Box(Orientation.VERTICAL, 0);
 
-    auto chatPane = new ChatPane();
-    vbox.packStart(chatPane, true, true, 0);
+    chat = new ChatPane();
+    vbox.packStart(chat, true, true, 0);
 
     auto chatEntry = new Entry();
     vbox.packStart(chatEntry, false, false, 0);
