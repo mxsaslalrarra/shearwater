@@ -12,7 +12,7 @@ struct Filter(Kind K)
 {
   auto urlParams()
   {
-    return tuple(STATE.userId);
+    return STATE.userId;
   }
 
   string data()

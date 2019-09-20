@@ -2,7 +2,7 @@ module matrix.common;
 
 const string[string] NULL_PARAMS;
 
-string makeParamString(const string[string] params, string concat)
+string makeParamString(const string[string] params, string concat) @safe pure
 {
   import std.format : format;
 
@@ -21,8 +21,8 @@ string buildUrl(
     string accessToken = "",
     const string[string] params = NULL_PARAMS,
     string apiVersion = "r0",
-    string apiSection = "client"
-) {
+    string apiSection = "client") @safe pure
+{
   import std.algorithm : endsWith;
   import std.format : format;
 

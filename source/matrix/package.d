@@ -1,5 +1,6 @@
 module matrix;
 
+import std.algorithm : canFind;
 import std.container : DList;
 import std.meta;
 import std.range : chain;
@@ -90,13 +91,61 @@ mixin template ResponseParameters(string Type)
   Status status;
 }
 
+string createUrl(T)(T request, string baseUrl)
+  if (__traits(hasMember, T, "endpoint"))
+  out (result; !result.canFind("%s"))
+  do
+{
+  import matrix.common : buildUrl;
+
+  static if (T.requiresAuth)
+  {
+    string accessToken = STATE.accessToken;
+  }
+  else
+  {
+    string accessToken = "";
+  }
+
+  // does the request url need to be formatted?
+  static if (__traits(hasMember, T, "urlParams"))
+  {
+    import std.format : format;
+    import std.traits : ReturnType, TemplateOf;
+    import std.typecons : Tuple;
+
+    static if (__traits(isSame, TemplateOf!(ReturnType!(T.urlParams)), Tuple))
+    {
+      string path = request.endpoint.format(request.urlParams.expand);
+    }
+    else
+    {
+      static assert (is(ReturnType!(T.urlParams) == string));
+      string path = request.endpoint.format(request.urlParams);
+    }
+  }
+  else
+  {
+    string path = request.endpoint;
+  }
+
+  static if (__traits(hasMember, T, "params"))
+  {
+    return buildUrl(baseUrl, path, accessToken, request.params);
+  }
+  else
+  {
+    return buildUrl(baseUrl, path, accessToken);
+  }
+
+  assert(0);
+}
+
 void execute(T)(T request, string baseUrl)
 {
   import std.format : format;
   import std.json : JSONException, JSONValue, parseJSON;
   import std.net.curl : CurlException, HTTPStatusException;
-
-  import matrix.common : buildUrl;
 
   static foreach (Method; Methods)
   {
@@ -107,29 +156,7 @@ void execute(T)(T request, string baseUrl)
       alias U = request.ResponseOf;
       static assert (__traits(hasMember, U, "parse"));
 
-      static if (T.requiresAuth) {
-        string accessToken = STATE.accessToken;
-      } else {
-        string accessToken = "";
-      }
-
-      static if (__traits(hasMember, T, "params"))
-      {
-        static if (__traits(hasMember, T, "urlParams"))
-        {
-          string url = buildUrl(baseUrl,
-                                request.endpoint.format(request.urlParams.expand),
-                                accessToken, request.params);
-        }
-        else
-        {
-          string url = buildUrl(baseUrl, request.endpoint, accessToken, request.params);
-        }
-      }
-      else
-      {
-        string url = buildUrl(baseUrl, request.endpoint, accessToken);
-      }
+      string url = request.createUrl(baseUrl);
 
       static if (T.method == HttpMethod.GET) {
         import std.net.curl : get;
