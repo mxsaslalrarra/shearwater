@@ -17,6 +17,7 @@ import gtk.Widget;
 import matrix;
 import matrix.api.login;
 import matrix.api.sync;
+import matrix.api.filter;
 import matrix.connection : connection;
 
 import ui.idle : onIdle;
@@ -76,6 +77,10 @@ public:
                 .filter!(evt => evt.type == "m.text")
                 .array
     );
+  }
+
+  void onFilterComplete(Response!Filter response)
+  {
   }
 
 private:

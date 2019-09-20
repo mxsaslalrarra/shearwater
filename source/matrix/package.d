@@ -2,7 +2,7 @@ module matrix;
 
 import std.algorithm : canFind;
 import std.container : DList;
-import std.meta;
+import std.meta : CompFilter = Filter, templateOr;
 import std.range : chain;
 import std.string : toLower;
 import std.traits;
@@ -69,6 +69,7 @@ struct Status
   string message;
 }
 
+// @refactor move to matrix/api/package.d
 mixin template RequestParameters(string Endpoint, HttpMethod Method, bool Auth = true) {
   import std.array : split;
 
@@ -85,10 +86,40 @@ mixin template RequestParameters(string Endpoint, HttpMethod Method, bool Auth =
   }
 }
 
-mixin template ResponseParameters(string Type)
+unittest
 {
-  enum string responseType = Type;
+  Request!Login req1;
+  assert(is(req1.ResponseOf == Response!Login));
+  Request!Sync req2;
+  assert(is(req2.ResponseOf == Response!Sync));
+  Request!Filter req3;
+  assert(is(req3.ResponseOf == Response!Filter));
+}
+
+// @refactor move to matrix/api/package.d
+mixin template ResponseParameters()
+{
+  import std.array : split;
+
   Status status;
+  static if (is(typeof(this) == T!A, alias T, A...))
+  {
+    mixin(`enum string responseType = "` ~ T.stringof.split('(')[0] ~ `";`);
+  }
+  else
+  {
+    static assert (0);
+  }
+}
+
+unittest
+{
+  Response!Login res1;
+  assert(res1.responseType == "Login");
+  Response!Sync res2;
+  assert(res2.responseType == "Sync");
+  Response!Filter res3;
+  assert(res3.responseType == "Filter");
 }
 
 string createUrl(T)(T request, string baseUrl)
@@ -231,7 +262,7 @@ unittest
   assert(!IsResponse!("FooBar"));
 }
 
-alias Methods = Filter!(templateOr!(IsRequest, IsResponse), ApiMembers);
+alias Methods = CompFilter!(templateOr!(IsRequest, IsResponse), ApiMembers);
 
 /++
  + Match the string representation of a type to it's actual type.

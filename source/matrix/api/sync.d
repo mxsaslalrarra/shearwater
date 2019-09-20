@@ -51,5 +51,5 @@ struct Sync(Kind K)
                 .to!(string[]);
   }
 
-  mixin ResponseParameters!(EndpointType);
+  mixin ResponseParameters;
 }

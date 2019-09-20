@@ -1,7 +1,6 @@
 module matrix.api.filter;
 
 import std.json;
-import std.typecons : Tuple, tuple;
 
 import matrix;
 
@@ -30,5 +29,5 @@ struct Filter(Kind K)
   {
   }
 
-  mixin ResponseParameters!(EndpointType);
+  mixin ResponseParameters;
 }

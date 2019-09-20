@@ -43,5 +43,5 @@ struct Login(Kind K)
     userId = data["user_id"].str;
   }
 
-  mixin ResponseParameters!(EndpointType);
+  mixin ResponseParameters;
 }
