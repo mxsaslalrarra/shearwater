@@ -14,9 +14,9 @@ extern(C) static int onIdle(void* data) nothrow
     try
     {
       auto result = take!(mixin(Method ~ `!(Kind.Response)`))();
-      if (!result.isNull && result.status.ok)
+      if (!result.isNull && result.get.status.ok)
       {
-        mixin(`mainWindow.on` ~ result.responseType.capitalize ~ `Complete`)(result);
+        mixin(`mainWindow.on` ~ result.get.responseType.capitalize ~ `Complete`)(result.get);
       }
     } catch (Throwable t) {}
   }

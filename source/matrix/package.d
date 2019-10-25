@@ -59,6 +59,7 @@ struct State
   mixin _!(string, "accessToken");
   mixin _!(string, "userId");
   mixin _!(bool, "connected");
+  // TODO add filters member
 }
 
 __gshared static State STATE;
@@ -147,7 +148,7 @@ string createUrl(T)(T request, string baseUrl)
 
     static if (__traits(isSame, TemplateOf!(ReturnType!(T.urlParams)), Tuple))
     {
-      string path = request.endpoint.format(request.urlParams.expand);
+      string path = request.get.endpoint.format(request.urlParams.expand);
     }
     else
     {
@@ -182,19 +183,19 @@ void execute(T)(T request, string baseUrl)
   {
     static if (methodMatches!(Method, T))
     {
-      static assert (__traits(hasMember, request, "ResponseOf"));
+      static assert (__traits(hasMember, T, "ResponseOf"));
       static assert (__traits(hasMember, T, "data") || __traits(hasMember, T, "params"));
-      alias U = request.ResponseOf;
+      alias U = T.ResponseOf;
       static assert (__traits(hasMember, U, "parse"));
 
-      string url = request.createUrl(baseUrl);
+      string url = request.get.createUrl(baseUrl);
 
       static if (T.method == HttpMethod.GET) {
         import std.net.curl : get;
         enum http = `get(url)`;
       } else {
         import std.net.curl : post;
-        enum http = `post(url, request.data)`;
+        enum http = `post(url, request.get.data)`;
       }
 
       U response;
