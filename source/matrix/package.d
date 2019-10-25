@@ -6,6 +6,7 @@ import std.meta : CompFilter = Filter, templateOr;
 import std.range : chain;
 import std.string : toLower;
 import std.traits;
+import std.typecons : Nullable;
 
 import core.thread;
 
@@ -173,7 +174,7 @@ string createUrl(T)(T request, string baseUrl)
   assert(0);
 }
 
-void execute(T)(T request, string baseUrl)
+void execute(T)(Nullable!T request, string baseUrl)
 {
   import std.format : format;
   import std.json : JSONException, JSONValue, parseJSON;
