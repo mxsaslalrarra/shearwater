@@ -60,7 +60,7 @@ struct State
   mixin _!(string, "accessToken");
   mixin _!(string, "userId");
   mixin _!(bool, "connected");
-  // TODO add filters member
+  mixin _!(string[], "filters");
 }
 
 __gshared static State STATE;
