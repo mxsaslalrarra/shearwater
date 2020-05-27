@@ -1,13 +1,15 @@
 {
-	"authors": [
-		"mxsaslalrarra"
-	],
-	"copyright": "Copyright © 2019, M. Rawcliffe",
-	"dependencies": {
-		"gtk-d": "~>3.9.0",
-        "sumtype": "~>0.8.9"
-	},
-	"description": "matrix client",
-	"license": "GPLv3",
-	"name": "shearwater"
+    "authors": [
+        "rinfz"
+    ],
+    "copyright": "Copyright © 2019, M. Rawcliffe",
+    "dependencies": {
+        "gtk-d": "~>3.9.0"
+    },
+    "description": "matrix chat client",
+    "license": "GPL-3.0",
+    "name": "shearwater",
+    "stringImportPaths": [
+        "assets"
+    ]
 }
